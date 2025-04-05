@@ -76,10 +76,17 @@ export function ExpenseForm({ expenseToEdit }: ExpenseFormProps) {
   });
 
   const onSubmit = (data: ExpenseFormData) => {
+    const expenseData: Omit<Expense, "id"> = {
+      title: data.title,
+      amount: data.amount,
+      date: data.date,
+      category: data.category,
+    };
+    
     if (expenseToEdit) {
-      updateExpense(expenseToEdit.id, data);
+      updateExpense(expenseToEdit.id, expenseData);
     } else {
-      addExpense(data);
+      addExpense(expenseData);
     }
     navigate("/expenses");
   };
