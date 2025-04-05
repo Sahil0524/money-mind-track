@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "./AuthContext";
+import { useSettings } from "./SettingsContext";
 
 // Define types
 export type ExpenseCategory = 
@@ -21,6 +23,7 @@ export interface Expense {
   amount: number;
   date: string;
   category: ExpenseCategory;
+  userId?: string; // Add userId to associate expenses with users
 }
 
 interface ExpenseContextType {
@@ -90,43 +93,66 @@ const sampleExpenses: Expense[] = [
 
 export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-
-  // Load initial data
+  const { user } = useAuth();
+  const { settings } = useSettings();
+  
+  // Load expenses from localStorage on mount and when user changes
   useEffect(() => {
-    const savedExpenses = localStorage.getItem("expenses");
-    if (savedExpenses) {
-      setExpenses(JSON.parse(savedExpenses));
+    if (user) {
+      // Get user-specific expenses
+      const key = `expenses-${user.id}`;
+      const savedExpenses = localStorage.getItem(key);
+      
+      if (savedExpenses) {
+        setExpenses(JSON.parse(savedExpenses));
+      } else {
+        // First time user - set sample data but with their userId
+        const userSampleExpenses = sampleExpenses.map(expense => ({
+          ...expense,
+          userId: user.id
+        }));
+        setExpenses(userSampleExpenses);
+        localStorage.setItem(key, JSON.stringify(userSampleExpenses));
+      }
     } else {
+      // No user logged in - show demo data without userId
       setExpenses(sampleExpenses);
-      localStorage.setItem("expenses", JSON.stringify(sampleExpenses));
     }
-  }, []);
+  }, [user]);
 
   // Save expenses to localStorage whenever they change
   useEffect(() => {
-    if (expenses.length > 0) {
-      localStorage.setItem("expenses", JSON.stringify(expenses));
+    if (user && expenses.length > 0) {
+      localStorage.setItem(`expenses-${user.id}`, JSON.stringify(expenses));
     }
-  }, [expenses]);
+  }, [expenses, user]);
 
   // Add a new expense
   const addExpense = (expense: Omit<Expense, "id">) => {
     const newExpense = {
       ...expense,
       id: crypto.randomUUID(),
+      userId: user?.id, // Associate with current user if logged in
     };
     
     setExpenses((prev) => [newExpense, ...prev]);
+    
+    // Format amount based on selected currency
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: settings.currency || 'USD',
+    });
+    
     toast({
       title: "Expense added",
-      description: `${expense.title} ($${expense.amount.toFixed(2)}) was added successfully.`,
+      description: `${expense.title} (${formatter.format(expense.amount)}) was added successfully.`,
     });
   };
 
   // Update an existing expense
   const updateExpense = (id: string, expense: Omit<Expense, "id">) => {
     setExpenses((prev) =>
-      prev.map((item) => (item.id === id ? { ...expense, id } : item))
+      prev.map((item) => (item.id === id ? { ...expense, id, userId: item.userId } : item))
     );
     toast({
       title: "Expense updated",
