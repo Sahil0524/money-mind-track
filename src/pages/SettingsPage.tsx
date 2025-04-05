@@ -51,7 +51,12 @@ const SettingsPage: React.FC = () => {
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     try {
-      await updateUserProfile(data);
+      // Since data is of type ProfileFormData, both name and email are guaranteed to be non-optional
+      await updateUserProfile({
+        name: data.name,
+        email: data.email,
+      });
+      
       toast({
         title: "Profile updated",
         description: "Your profile information has been updated.",
