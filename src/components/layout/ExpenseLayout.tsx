@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ExpenseProvider } from "@/context/ExpenseContext";
 import { SettingsProvider } from "@/context/SettingsContext";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { Home, LineChart, FilePlus, Settings, LogOut, User, UserPlus } from "lucide-react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -149,15 +149,13 @@ export function ExpenseLayout() {
   );
 }
 
-// We need a wrapper that provides auth context to ExpenseLayout
+// We need a wrapper that provides context to ExpenseLayout
 export function ExpenseLayoutWrapper() {
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <ExpenseProvider>
-          <ExpenseLayout />
-        </ExpenseProvider>
-      </SettingsProvider>
-    </AuthProvider>
+    <SettingsProvider>
+      <ExpenseProvider>
+        <ExpenseLayout />
+      </ExpenseProvider>
+    </SettingsProvider>
   );
 }
